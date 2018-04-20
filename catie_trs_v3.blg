@@ -1,0 +1,49 @@
+This is BibTeX, Version 0.99d (TeX Live 2016)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: catie_trs_v3.aux
+The style file: apalike.bst
+Database file #1: catie_trs_refs.bib
+Warning--empty journal in dammak2013
+Warning--empty journal in meltzer2001treatment
+You've used 20 entries,
+            1935 wiz_defined-function locations,
+            622 strings with 10512 characters,
+and the built_in function-call counts, 11619 in all, are:
+= -- 1022
+> -- 917
+< -- 6
++ -- 348
+- -- 344
+* -- 1198
+:= -- 2109
+add.period$ -- 58
+call.type$ -- 20
+change.case$ -- 270
+chr.to.int$ -- 20
+cite$ -- 22
+duplicate$ -- 277
+empty$ -- 554
+format.name$ -- 370
+if$ -- 2105
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 20
+newline$ -- 101
+num.names$ -- 60
+pop$ -- 232
+preamble$ -- 1
+purify$ -- 270
+quote$ -- 0
+skip$ -- 210
+stack$ -- 0
+substring$ -- 616
+swap$ -- 18
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 120
+warning$ -- 2
+while$ -- 72
+width$ -- 0
+write$ -- 256
+(There were 2 warnings)

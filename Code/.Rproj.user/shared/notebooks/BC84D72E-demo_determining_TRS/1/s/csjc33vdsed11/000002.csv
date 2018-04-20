@@ -1,0 +1,2 @@
+"0","        # -- record IF EVER met Rx >= 2 criteria"
+"0","        status.rx  <- ifelse( !is.na( onset.Rx ) & onset.Rx  > 0, 1, 0 )"

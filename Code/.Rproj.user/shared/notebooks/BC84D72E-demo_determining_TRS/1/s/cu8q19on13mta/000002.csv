@@ -1,0 +1,2 @@
+"0","        # -- Now, if deltaPANSS >= 20% ==> improvement threshold, therefore NOT TRS on that PANSS domain"
+"0","        TRS.change.PANSS.criteria <- ifelse( deltaPANSS >= 20, 0, 1 )"

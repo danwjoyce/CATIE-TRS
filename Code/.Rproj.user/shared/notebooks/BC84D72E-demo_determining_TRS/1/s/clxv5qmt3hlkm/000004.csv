@@ -1,0 +1,5 @@
+"0","        # -- extract the PANSS scores at time.onset.TRS : this will be the baseline for symptom change measurement"
+"0","        baselinePANSS <- temp[ which( temp$visday == time.onset.TRS ), c(""visday"", ""adjPos"", ""adjNeg"", ""adjGen"", ""adjTot"") ]"
+"0","        "
+"0","        # -- extract the PANSS scores for followup "
+"0","        # -- this will be after 0, 1 or 2 adequate trials and will be the follow-up time for symptom change measurement"

@@ -1,0 +1,424 @@
+\documentclass[a4paper,nobib]{article}
+\usepackage{amssymb,amsmath,bm,mathtools,etoolbox,setspace}
+\usepackage[round]{natbib}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{enumitem}
+
+%\newcommand{\matr}[1]{\mathbf{#1}}
+%\newcommand{\Real}{\mathbb{R}}
+
+%\makeatletter
+%\newcommand*{\transpose}{%
+%	{\mathpalette\@transpose{}}%
+%}
+%\newcommand*{\@transpose}[2]{%
+%	% #1: math style
+%	% #2: unused
+%	\raisebox{\depth}{$\m@th#1\intercal$}%
+%}
+%\makeatother
+%
+%\providecommand\given{}
+%\DeclarePairedDelimiterXPP\Aver[1]{\mathbb{E}}{[}{]}{}{
+%	\renewcommand\given{  \nonscript\:
+%		\delimsize\vert
+%		\nonscript\:
+%		\mathopen{}
+%		\allowbreak}
+%	#1
+%}
+%%%%%%%%%
+\doublespacing
+
+%opening
+\title{The Incidence of Treatment Resistant Schizophrenia using the TRRIP Definitions (3rd Version)}
+\author{Dan W. Joyce, Alexis E. Cullen, Rodrigo A. Bressan and Sukhwinder S. Shergill}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\subsection*{Importance}
+Estimates of treatment resistant schizophrenia (TRS) vary due to lack of consensus definition.  The Treatment Response and Resistance in Psychosis (TRRIP) consensus provides a rigorous prospective definition for TRS, but has not yet been applied to data.  We provide the first prospective estimate of the incidence of TRS in a large community cohort using TRRIP.
+\subsection*{Objective}
+To establish the incidence of TRS prospectively in a ``real world'' community-dwelling population of people with chronic schizophrenia by data-mining with an operationalised algorithm implementing the TRRIP consensus. 
+\subsection*{Data Sources}
+The NIMH Clinical Antipsychotic Trials of Intervention Effectiveness (CATIE) trial dataset.
+\subsection*{Main Outcome and Measure}
+Crude incidence rates and survival estimates for TRS, along with inferential analyses of baseline demographics, illness characteristics and medication predicting the probability of meeting the TRRIP criteria for TRS.  Machine learning was also applied to these features in an attempt to identify robust predictors for TRS.   
+\subsection*{Results}
+From 1458 patients enrolled in CATIE, XX patients received two or more adequate treatments, and of these, XX developed TRS by the prospective TRRIP criteria, yielding a crude incidence of XX cases per 100 contributed person-years. There was no difference in medication, dose or sex between those who responded to treatment and those meeting TRS thresholds. Developing TRS was modestly associated with baseline positive symptom burden, age, and verbal memory; however, machine learning failed to validate these as robust predictors of developing TRS.
+
+\subsection*{Conclusion and Relevance}
+The CATIE trial protocol excluded patients with retrospective evidence of TRS, however, applying the TRRIP definition revealed that there were patients meeting criteria \emph{prospectively}.  Our results suggest a XXX incidence, no effect of patient sex and that baseline clinical and demographic data is not a robust predictor of future resistance status. 
+\end{abstract}
+
+\section{Introduction}
+Currently, there is a paucity of empirical data on the prevalence and incidence of treatment resistant schizophrenia (TRS) with estimates yielded varying rates, ranging from around one-third \citep{Lehman2004,elkis2007treatment} to 40-60\% \citep{juarez1995restricting,essock1996clozapine,meltzer2001treatment}, with males expected to be more resistant to neuroleptic treatment \citep{szymanski1995gender}, and variation in results being attributable to differing diagnostic criteria, populations (inpatient versus community settings) and methodological differences e.g. retrospective versus prospective assessment \citep{dammak2013}. 
+
+The Treatment Response and Resistance in Psychosis (TRRIP) \cite{Howes2017} concensus statement aims to provide a uniform definition and minimum criteria for TRS unifying 8 different national, professional body and clinical guideline definitions that all agree on the number of antipsychotic trials (i.e. at least 2 different agents) but differ on the definition of adequate trial, dose, adherence, illness severity and clinical definition of response.   
+
+A key component of the TRRIP concensus is that evaluation of treatment resistance be \emph{prospective} and the important minimum criteria are \citep{Howes2017}:
+\begin{itemize}
+	\item Current Symptoms: at least \textbf{moderate} severity on standardised instruments (e.g. PANSS) and duration of at least 12 weeks.  Social and occupational functioning (SOF) should be measured using a validated scale and show at least \textbf{moderate} impairment.
+	\item Adequate treatment: at least 2 treatments of \textbf{duration} at least 6 weeks at a \textbf{therapeutic dose} and with adherence of at least 80\% doses with information furnished from at least 2 sources
+	\item Symptom Domain: specify whether positive, negative or cognitive symptoms are treatment resistant
+	\item Onset: specify early (within 1 year), medium-term (1-5 years) or late (greater than 5 years) after starting treatment 
+\end{itemize}
+
+In principle, the Clinical Antipsychotic Trials of Intervention Effectiveness (CATIE) trial protocol excluded patients with retrospective evidence for TRS ``defined by the persistence of severe symptoms despite adequate trials of one of the proposed treatments or prior treatment with clozapine'' \citep{Lieberman2005}.  Patients in CATIE had been unwell for at least one year, and a majority (72\%) were on treatment at the start of the trial \citep{Lieberman2005}.  Additionally, CATIE is a large (over 1400 patients), multi-site trial of community-based patients and estimates of incidence of TRS in this population can provide insight into disease burden in patients with chronic illness, but not necessarily under specialist inpatient care.  
+
+We aim to estimate the incidence of TRS in a large community dwelling population of patients with chronic schizophrenia, with the hypothesis that in the CATIE trial, applying a rigorous definition \emph{prospectively} will expose cases of treatment resistance that developed during the trial (that may have been assumed to have been excluded).  
+
+\textbf{REVISE}
+Our secondary analyses estimated the proportion of patients who meet social and occupational functioning and/or symptoms criteria but who had trialled only \emph{one} adequate treatment.  Finally, we conducted exploratory analyses (using machine learning) to determine if prediction of TRS cases is possible given baseline clinical data in CATIE.
+
+\section{Methods}
+The publicly available CATIE data (Study ID: N01 MH090001-06, \url{https://ndar.nih.gov/edit_collection.html?id=2081}) were mined using bespoke implementations of algorithms that operationalise the minimum TRRIP concensus criteria.  All data pre-processing and analysis were conducted in \textsf{R} version $3.4.1$.
+
+\subsection{Missing Data -- NEEDS REVISING}
+We retrieved a total of 1458 patients from the CATIE data set. Complete baseline demographic data was available for 1380 patients.  Of these 1380 patients, there were no missing psychopathology (PANSS) data, but 9 patients were missing adequate information to assess SOF. Therefore, 1371 patients could be included in our analysis.  Of 1371 patients assessed at baseline, 1271 had sufficient data for follow-up (100 patients were missing details of either medication trials, symptom or SOF data).  To establish if follow-up data was systematically and predictably missing in these 1371 patients, three separate logistic regression models were estimated for the probability of missing i) symptom, ii) SOF and iii) adequate medication trial data using the baseline data (including demographics) as predictors. 
+
+
+\subsection*{Social and Occupational Functioning Measures}
+In CATIE, a number of instruments were used in the assessment of social and occupational functioning (SOF).  The TRRIP concensus recommends the use of a standardised tool e.g. the DSM-IV Social and Occupational Functioning Assessment Scale (SOFAS) for which operational criteria are defined in the Personal and Social Performance (PSP) scale \citep{Morosini2000}.  The CATIE trial used a number of different scales which probe SOF, so we aggregated a number of different items from these instruments to arrive at a threshold for ``moderate impairment'' (see Supplementary Information for details).  
+
+\subsection*{Medication Doses, Duration and Adherence Measures}
+For medication dosing, we noted that using a 600mg chlorpromazine equivalent -- using established concensus methods including daily-dose equivalents \citep{Leucht2016} -- resulted in restrictively high adequate dose thresholds for many of the antipsychotics in the CATIE trial.  The TRRIP recommendations also allow for adequate dosing defined as the target or midpoint of the dose range in each medication's summary of product characteristics (SPC) (see Supplementary Information, Table \ref{SI:tab-meds-dose} for thresholds used) and this more realistically reflects clinical prescribing behaviour.  The TRRIP medication adherence criteria specify $\geqslant 80\%$ adherence based on pill counts, chart inspection and collateral information.  As a proxy, we used the CATIE overall adherence score, which combines multiple sources of information (including pill counts and collateral) for which the highest level of adherence available is $\geqslant 75 \%$.  In Phase 3 of the CATIE trial, participants were allocated to either one or a combination of two antipsychotics; in cases where two antipsychotics were given, either could count as an adequate trial (provided the medication qualifying as the adequate trial was different to that assigned in Phase 2).  Duration of treatment was adequate if greater than 6 weeks.
+
+To test for differences in prescribed doses, multivariate analysis of variance (MANOVA) was used as an omnibus test, with drug dose as multiple-dependent and group (treatment resistant and non-treatment resistant -- TRS and NTR respectively) as independent variables.
+
+\subsection*{Symptom Change and Response Thresholds -- NEEDS REVISING}
+Before and after an adequate trial of medication, patients must continue meet both absolute symptom severity criteria as well as demonstrating less than 20\% change in symptoms.  Following TRRIP, the absolute symptom severity criteria for each patient where having two PANNS items at 'moderate', or one item at 'severe' in positive or negative domains.  For symptom change at the end of a medication trial, we calculated the reduction from baseline (using the \cite{Leucht2009} formula) and applied the TRRIP criteria of treatment resistance being a reduction of less than 20\% in both the overall PANSS score \emph{and} the positive or negative domains individually. When a patient exited the trial, after at least 2 adequate trials, their last PANSS and SOF scores were used to evaluate absolute threshold and change in symptoms, and classified as either TRS (if still meeting criteria) or right-censored and considered non-treatment resistance (NTR). 
+
+The TRRIP concensus further suggests treatment resistance in the cognitive domain and neurocognitive testing was performed in CATIE, but only at 4 time points (including baseline and the end of the study). Five domains (processing speed, reasoning, working memory, verbal memory and vigilance) were measured in CATIE, and one composite (average) score recorded. In each domain, the cognitive performance scores are normalised (i.e. $z$-scores) \emph{within} the CATIE population, not relative to a control or normative population data \citep{keefe2006baseline}.  Cognitive performance change can therefore be evaluated in the CATIE trial (between baseline and end of the study), but they cannot be used as a domain for treatment resistance (e.g. in the same way positive and negative symptoms are) because of paucity of data coincident with symptom evaluations and changes to medication.
+
+\subsection*{Survival and Incidence Estimates -- NEEDS REVISING}
+A patient was deemed at risk of TRS if they had $\geqslant 2$ adequate trials of different antipsychotic medications such that in the CATIE trial design, patients in Phase 1B and those who transitioned directly from Phase 1 to 2 onwards can be prospectively evaluated.  For at risk patients, we estimated a Cox regression with survival time defined as conversion to TRS or censoring (i.e. leaving the trial and being below threshold for TRS criteria) with sex as a predictor.  A Mantel-Haenszel test was used to establish violation of the proportional hazards assumption.  A $\chi^2$ test for proportionality was used to examine if the male/female proportion in the at risk for TRS group differed from the CATIE population.  We estimated the crude incidence rate as the sum of TRS events divided by the person-years contributed by all at risk patients up to either conversion or censoring. Survival analyses, hypothesis tests and plots were all produced using using the \textsf{R} packages \texttt{survival} v 2.41-3 and \texttt{survminer} v0.4.0.
+
+\subsection*{Burden of Individual TRS Criteria -- NEEDS REVISING}
+To establish how prevalent the SOF, symptom and treatment criteria are in the CATIE population, patients in each phase of the trial (baseline, Phase 1/1A, 1B, 2 and 3) were evaluated for their meeting criteria \emph{independently} (in contrast to meeting all criteria for TRS).  Absolute numbers and proportions were calculated.  We then defined a ``difficult to treat'' sub-population (distinct from the TRS group) of patients that met TRS criteria on symptoms and/or SOF \emph{but} whom received exactly one adequate treatment prior to exiting the trial.  These patients represent those with unmet needs, i.e. symptomatically or in terms of impact on social and occupational functioning and who might warrant further treatment trials. 
+
+\subsection*{Predicting TRS from Baseline Data -- NEEDS REVISING }
+We conducted an inferential analysis using logistic regression for establishing associations between TRS status and baseline features (37 variables including SOF, symptoms (as total PANSS positive, negative and general domains), cognitive testing (5 domains), medication on entering the trial, recent exacerbations/hospitalisations, age and duration of illness, presence of tardive dyskinesia, and race/ethnicity).  We applied machine learning (ML) to test the \emph{predictive} ability of the baseline data to predict TRS from the same baseline variables (described in Supplementary Information, Table \ref{tab-all-assoc-GLM}), using penalised generalised linear models -- glmnets \citep{Friedman2010} -- to simultaneously implement variable/feature selection and classification (TRS vs. NTR) within a repeated, stratified \emph{k}-fold cross-validation routine with area under the receiver-operating characteristic curve (AUC) used to estimate predictive out-of-sample performance.  The ratio of TRS:NTR cases is heavily biased toward NTR leading to established problems with imbalanced classification in ML \citep{He2009}, so given the relatively small number of predictor variables \citep{Blagus2013} we applied the synthetic minority oversampling technique (SMOTE) to balance classes within each fold during repeated cross-validation \citep{Chawla2002}.
+
+\section{Results}
+\subsection{Missing Data-- NEEDS REVISING}
+The probability of patients' symptom, SOF and adequate medication trials data being missing at follow-up was estimated using three logistic regression models on the 1371 patients using baseline clinical and demographic variables (PANSS positive, negative, general symptoms; age; sex; race; ethnicity; accommodation and independent living status; marital status; years since first treated; total and recent hospital admissions; baseline medication prior to entering the trial and baseline at-risk status from the TRRIPP criteria).  Holms-Bonferroni correction applied to each model.  None of the predictors were significantly associated missing follow-up data for symptoms, SOF or medication trials. 
+
+
+
+\subsection{Survival Analysis and Incidence -- NEEDS REVISING}
+%\begin{figure}[h]
+%	\begin{center}
+%		%\includegraphics[width = 12cm, trim={0 10cm 6cm 0},clip]{example-pos-neg}
+%		\includegraphics[width = 10cm]{TRS_surv_diag.pdf}
+%		\caption{Kaplan Meier survival curve for survival probability of converting to TRS.  Grey area represents 95\% confidence interval; $P$-value shown for test of difference in hazard rates between male/female patients}
+%		\label{fig:surv-curve}
+%	\end{center}
+%\end{figure}
+
+We were able to retrieve data for a total of 1458 (male:female = 1078:380) patients in the CATIE data set where -- throughout their time in the trial -- 145 (34 female) were at risk of TRS by virtue of having had $\geqslant 2$ adequate trials of different antipsychotics. 
+
+Of the 145 at-risk patients, a total of 59.3\% (86 of 145) converted to TRS.  In the at-risk group, 86 (of 145) converted to TRS over a total of 144.79 contributed person-years, yielding a crude incidence of 59.40 cases per 100 person-years. These 86 patients represent just under 6\% of the total trial population.  For patients converting to TRS (ignoring sex), the median survival time was 1.06 years (95\% CI = [0.94, 1.30])   A two-sample test for equality of proportions of male:female (111:34) in the TRS at-risk sub-population compared with the remaining general CATIE population (967:346) showed no significant difference ($\chi^2$ = 0.43, df = 1, \emph{p}-value = 0.51, difference in proportions = 0.013, 95\% confidence interval = [-0.022, 0.049]) likewise, in the at-risk patient group, the proportion of male:females (63:23) converting to TRS versus non-treatment resistance (NTR) was not significantly different ($\chi^2$ = 0.87, df = 1, \emph{p}-value = 0.35, difference in proportions = -0.11, 95\% confidence interval = [-0.310, 0.093]).  
+
+Cox regression showed survival (Figure \ref{fig:surv-curve}) did not differ between male and female patients (Hazard ratio for being male = 0.80, 95\% confidence interval = [0.50, 1.29], \emph{p}-value = 0.35) with there being no violation of the proportional hazards assumption ($\rho$ = 0.060, $\chi^2$ = 0.32, \emph{p} = 0.58).  
+
+\subsection{Medication Differences -- NEEDS REVISING}
+An omnibus MANOVA with mean daily doses for all 8 medications as dependent variables (Figure \ref{fig:rx-chart}) and group (treatment resistant and responsive patient groups; TRS, NTR respectively) showed no significant differences (\emph{F}(1,143)=0.83, Pillai's trace = 0.046, \emph{p} = 0.58). 
+%\begin{figure}[h]
+%	\begin{center}
+%		\includegraphics[width = 10cm]{rx_by_group.pdf}
+%		\caption{Mean Medication Doses in the TRS and NTR patients: Error bars show 95\% confidence interval derived from the standard error of the mean dose}
+%		\label{fig:rx-chart}
+%	\end{center}
+%\end{figure}
+
+\subsection{Symptom Domains -- NEEDS REVISING}
+According to the TRRIP concensus, patients should further be categorised into treatment-resistance status according to whether positive, negative or cognitive symptoms dominate.    
+
+\subsection*{Positive and Negative Cases -- NEEDS REVISING}
+Of the 86 TRS patients, none were exclusively treatment resistant in positive, negative or general domains alone, rather they were generally resistant on two or more domains.  The percentage of treatment resistance patients were 63.95\% (55) in all (positive, negative and general) domains; 2.32\% (2) in positive and negative domains; 16.3\% (14) in positive and general domains and 17.44\% (15) in negative and general domains. 
+
+\subsection*{Cognitive Profiles -- NEEDS REVISING}
+Of the 86 TRS patients, 16 were missing cognitive testing data in one of the five domains reported for the CATIE trial, rendering the overall composite cognitive test score missing.  For the NTR patients, 5 of the 59 patients were similarly missing. The distribution of change in composite cognitive score was skewed, and violated assumptions of normality.  A two-sample Kolmogorov-Smirnov test failed to reject the null hypothesis $(D = 0.19, p = 0.22)$ that change in composite cognitive performance in the TRS and NTR groups are from the same distribution, suggesting there were no meaningful differences. 
+
+\subsection*{Burden of Individual Criteria -- NEEDS REVISING}
+Figure \ref{fig:prop-graph} and Table \ref{tab-proportions} describe the proportions of patients who meet criteria on symptoms and SOF at the end of each phase in the CATIE trial design.  Of note, there is a consistently high proportion of patients meeting the SOF criteria (moderate impairment) at each phase (which does not change with treatment). 
+
+%\begin{figure}[h]
+%	\begin{center}
+%		\includegraphics[width = 10cm]{SOF_sx_rx_prop.pdf}
+%		\caption{Proportions of participants meeting TRRIP criteria independently for SOF, adequate treatment trial (Rx) and symptoms (Sx) by phase of trial. An adequate trial is one where duration, dose and adherence criteria are met}
+%		\label{fig:prop-graph}
+%	\end{center}
+%\end{figure}
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rrrrr}
+  \hline
+  Phase      & SOF   & Symptoms & Adequate Rx  \\ 
+  \hline
+  Baseline   &  1320 (1445) & 757 (1206)  \\ 
+  Phase 1/1A &  1034 (1171) & 478 (1204) & 550 (1352) \\ 
+  Phase 1B   &  95 (106)    & 36 (107) & 51 (111) \\ 
+  Phase 2    &  413 (458)   & 209 (484) & 200 (504)  \\ 
+  Phase 3    &  207 (234)   & 79 (249) & 111 (257)  \\ 
+   \hline
+\end{tabular}
+\caption{Number of patients meeting threshold for each TRRIP criteria (total number with data available in parentheses).  The `Adequate Rx' column indicates the number of participants who had a single adequate trial in each phase of the trial}
+\label{tab-proportions}
+\end{table}
+
+A total of 589 patients had exactly one adequate treatment episode across any phase of the trial.  Of these, 26\% (156) and 87\% (503; excluding 5 patients missing sufficient data) were above threshold on the symptom or SOF criteria for TRS respectively.  This sub-population represents 10\% and 35\% of the CATIE population for difficult-to-treat symptoms and moderate impairment on SOF respectively. Of the 156 patients with above threshold symptoms, 146 were simultaneously above threshold on SOF. The crude incidence for those meeting symptom criteria (despite one adequate trial) was 22.6 per 100 person-years and for those meeting SOF threshold, 74.5 per 100 person-years.   For those meeting both symptoms and SOF criteria, the crude incidence was 21.21 per 100 person years.
+
+The probability of leaving the trial meeting criteria on SOF, symptoms or both was estimated using logistic regression, with the duration of the adequate trial (in months), total number of other trials (i.e. those treatments trialled that did \emph{not} meet criteria for dosing, duration etc.) and sex as predictors.  Longer duration (in months) of the single adequate trial was associated with a modest reduction in the probability of meeting TRS criteria for symptoms alone with odds ratios (OR) = 0.93 ($p$-value = 0.0003, 95\% confidence interval = $[0.90, 0.97]$) and for both symptoms and SOF; OR = 0.94 ($p$-value = 0.0007, $[0.90,0.97]$).  However, no predictor was significant for SOF alone (full models reported in Supplementary Information, Table \ref{tab-both-glm-D2T}). In contrast, the same logistic regression model applied to the TRS group demonstrated \emph{no} effect of adequate treatment duration, number of other treatment trials or sex (see Supplementary Information, Table \ref{tab-both-glm-TRS}).
+
+\subsection*{Predicting TRS from Baseline Clinical Characteristics -- NEEDS REVISING}
+Applying logistic regression to the 39 predictors for 1036 participants (that included 69 TRS patients) for which there was no missing data at baseline revealed modest associations for: verbal memory (OR = 0.60, 95\% CI = $[0.43, 0.84]$, $p = 0.0031$), positive symptom burden (OR = 1.07, 95\% CI = $[1.00, 1.14]$, $p = 0.0407$), age (OR = 1.05, 95\% CI = $[1.02, 1.09]$, $p=0.0048$), being on ziprasidone at the start of the trial (OR = 2.63, 95\% CI = $[0.96, 6.51]$, $p = 0.0454$) or another antipsychotic \emph{not} used in the CATIE trial (OR = 2.41, 95\% CI = $[1.11, 4.93]$, $p = 0.0202$).  There were no other associations at statistical significance (Supplementary Information, Table \ref{tab-all-assoc-GLM}).
+
+Applying the ML procedure to the same data demonstrated poor predictive performance on out-of-sample tests, irrespective of whether SMOTE was used to balance classes during training, with the mean AUC = 0.56 (95\% CI = $[0.54, 0.59]$), suggesting the signal in the inferential associations above are too weak to have utility for prediction. 
+
+\section{Discussion -- NEEDS REVISING}
+We demonstrate a first application of the TRRIP consensus by re-purposing the CATIE trial data and showed that when retrospective assessment was used to ``screen-out'' treatment resistance (i.e. according to the CATIE trial protocol), cases were still present in the sample and emerged when prospective evaluation was applied as treatment progressed.  We demonstrated that the incidence in at-risk patients (i.e. those having two or more adequate treatment trials) concords with the higher end of estimates in the literature.  In addition, we demonstrated a significant burden of symptoms and/or impairment in social and occupational functioning in patients who had one adequate trial, suggesting a high level of unmet need in this ``difficult to treat'' subgroup and where the duration of that treatment was modestly associated with improvement in symptom (but not social and occupational functioning) criteria.  The same association was not found in the TRS group, which provides support for their being a qualitative difference between those that will eventually respond to treatment, compared with those that are resistant.  We showed that there was no differences in dosing between the TRS and NTR groups -- suggesting that treatment resistance is not explicable by class or dose of medication alone -- and there was no effect of sex on the hazard ratio for developing TRS.  
+
+In terms of predicting TRS from baseline clinical assessment data, we showed modest associations in a conventional inferential analyses which suggest that better verbal memory is associated with a slight reduction in odds ratio for developing TRS, and similarly, for age (with older patients being marginally more likely to meet TRS criteria) and PANSS positive symptoms (again, a small effect of higher symptom load with greater odds ratio for meeting TRS criteria).  The effects of baseline drug treatment suggested the use of ziprasidone or another antipsychotic - not used in the CATIE study (risperidone olanzapine, quetiapine or perphenazine) had an increased risk of developing TRS. This needs to be prefaced by the caveat that these associations have wide confidence intervals, suggestive of estimation error secondary to small samples but may also reflect exposure to many antipsychotic medications prior to enrollment in the trial. 
+
+Despite these effects from inferential analyses, ML-based prediction of TRS status from baseline clinical data failed to show robust predictions in repeated out-of-sample cross validation, suggesting these have no utility for predicting which patients will meet TRS using, at least given the assessment data in CATIE which includes the necessary variables for symptoms and SOF in the TRRIP consensus.  
+
+The CATIE trial excludes patients with first-episode psychosis so the population represents more chronic patients with median years since first prescribed an antipsychotic of 13 years (IQR = 18) and median age 42 (IQR = 16.5), so we would expect a higher level of treatment resistance.  Of significance, using TRIPP, patient's social and occupational impairment appears remarkably difficult to treat in both NTR, TRS and the subgroup we designated ``difficult to treat'' suggesting that -- as a core feature of treatment resistance -- social and occupational function is less discriminating in chronic patients.
+
+
+\newpage
+\setcounter{section}{1}
+\setcounter{table}{0}
+\renewcommand{\thesection}{S\arabic{section}} 
+\renewcommand{\thetable}{S\arabic{table}}
+\section*{Supplementary Information}
+\subsection{Current Symptoms and Response}
+
+The PANSS item scores were adjusted so that 0 represents an absence of symptoms, and consequently, 6 represents the most severe rating on any of the 30 items.  This concords with the methods described in \citep{Leucht2009} and advocated in the TRRIP concensus for measuring symptom changes / response.
+
+\subsection{Social and Occupational Function}\label{SI:SOF}
+The TRRIP concensus recommends using a validated scale such as the SOFAS, and sets the threshold for ``moderate impairment'' as a score of < 60 on the 0-100 scale. The original SOFAS provides an unstructured and linguistically vague set of descriptors \cite{Morosini2000} whereas their Personal and Social Performance (PSP) scale provides an operationalised version with four domains: 
+\begin{enumerate}[label=(\Alph*)]
+	\item socially useful activities, including work and study
+	\item personal and social relationships. 
+	\item self-care
+	\item disturbing and aggressive behaviours
+\end{enumerate}
+
+The equivalent of moderate impairment (on the SOFAS or Global Assessment of Function scale) using the PSP \citep{Morosini2000} is defined as ``Marked [difficulties] in 1 of general areas A-C, or manifest difficulties in D'' which equates to a global assessment of functioning score of 51-60.  
+
+In the CATIE trial, there are three instruments which cover social and occupational functioning:
+\begin{enumerate}
+	\item clinician-rated social functioning and interpersonal relationships are measured by the Heinrichs-Carpenter Quality of Life Scale (QLS) \citep{heinrichs1984quality}
+	\item the Lehman Quality of Life Interview (QOLI) measures physical, economic, social, and psychological functioning, employment, leisure, and residence \cite{lehman1988quality}
+	\item the MacArthur Community Violence Instrument \citep{steadman1998violence} is used to estimate risk of violence and aggression. 
+\end{enumerate}
+
+From these three instruments, we produced a proxy PSP score as follows:
+\begin{enumerate}[label=(\Alph*)]
+	\item socially useful activities, including work and study was measured by taking the ``instrumental role'' score on the Heinrichs-Carpenter QLS.  A score of between 5-6 indicates ``excellent / little impairment'', with a threshold of less than or equal to 3 indicating moderate impairment and 0-1 being severe impairment \citep{heinrichs1984quality}.
+	
+	\item personal and social relationships is equated with ``interpersonal relations'' score in the Heinrichs-Carpenter QLS, with the same scoring as ``instrumental role'' above
+	
+	\item self-care is sub-divided into three domains, extracted from the QOLI and QLS:  
+	\begin{enumerate}[label=(\arabic*)]
+		\item \textbf{accommodation status} where a maximum score of 5 indicates fully independent living, with the moderate impairment threshold at 3 ``moderately supported accommodation'', 2 being ``extremely restricted accommodation'' and 1 equating to homelessness) 
+		\item \textbf{activities of daily living related to self-care} defined with 4 being the highest level (wash, do laundry, clean room, do chores) and a moderate threshold of 3 meaning professional help is required with at least one of these activities, and 0 being unable to do any of these tasks without help
+		\item \textbf{independence} scored as 1 point for each of: reminding for a) appointments or b) to take medication and requiring supervision c) to take the patient to appointments or d) take medication -- a score of 4 indicates complete independence, and a threshold of 3 was used for moderate impairment (i.e. at least one activity requires reminders with another requiring direct supervision).  
+	\end{enumerate}
+	The overall self-care (C) domain score is calculated to be at or below the ``moderate impairment'' threshold with a score of less than or equal to 3 in either (2) activities of daily living / (3) independence \emph{or} less than or equal to 3 on (1) accommodation status, because living in moderately supported accommodation implies moderate impairment on the PSP \cite{Morosini2000} where they define ``marked impairment'' as ``the person is still able to do something without professional or social help, although inadequately and/or occasionally; if helped by someone, he/she may be able to reach the previous level of functioning''.
+	
+	\item disturbing and aggressive behaviours are defined in the PSP  \citep{Morosini2000} as \emph{severe} by ``frequent verbal threats or frequent physical assaults, without intention or possibility to severe injuries'' and suggests downgrading to ``marked'' impairment if occasional (rather than frequent) which is operationalised as less than 3 occurrences in a time period.  We produced a proxy measure using the MacArthur scale by considering only items measuring aggression or violence directed at others by summing scores of 0 (did not occur) or 1 (did occur) over activities 1) throwing an object at someone, 2) pushed/grabbed/shoved someone, 3) slapped someone, 4) kicked/bitten/choked someone, 5) hit someone with fist/object or beaten up someone, 6) attempt to force someone to have sex, 7) threatened someone with gun/knife, 8) used knife/fired a gun on someone, 9) anything else considered violent, and 10) physically hurt someone -- bruise, cut, broken bone, knocked unconscious -- irrespective of mechanism).  This yields a total score between 0-10. Given that \emph{any} of these individual descriptors on the MacArthur scale would certainly meet the criteria for ``severe'' or ``marked'' impairment on the PSP, we set a threshold of greater than or equal to 3 (by \cite{Morosini2000}'s definition of occasional) as being ``marked'' for the disturbing and aggressive behaviour domain in our proxy PSP measure.
+\end{enumerate}
+
+After calculating the individual proxy domains (A) through (D) using the above rubric, we then set the overall SOF score to meet threshold for moderate impairment (i.e. meeting the TRRIP consensus for treatment resistance threshold on SOF) using the above rule: if the patient demonstrates ``marked'' impairment in one of A through C, or manifest difficulty in D.  This equates to an overall 0-100 scaled score (e.g. for comparison with the SOFAS scale) of 51-60 and similarly, equates to a Global Assessment of Function (GAF) score indicating ``moderate impairment'' \citep{Morosini2000}. Of note, our rule for (D) cannot distinguish between ``marked'' and ``manifest'' (the lower rating) so it is likely our proxy SOFAS/PSP measure underestimates impairment on this domain, because only the more aggressive/violent (rather then disturbed) behaviours are captured.  For missing data items, we assumed \emph{no} impairment so again, our proxy for SOFAS is likely underestimating, rather than exaggerating, impairment in social and occupational functioning. 
+
+\subsection{Adequate Treatment}
+We sourced summary-of-product characteristics (SPCs) for each antipsychotic:
+\begin{itemize}
+	\item Ziprasidone \url{http://labeling.pfizer.com/ShowLabeling.aspx?id=584}
+	\item Olanzapine \url{http://pi.lilly.com/us/zyprexa-pi.pdf}
+	\item Risperidone \url{http://www.janssen.com/us/sites/www_janssen_com_usa/files/products-documents/risperdal-prescribing-information.pdf}
+	\item Perphenazine \url{https://www.medicines.org.uk/emc/medicine/22596}
+	\item Quetiapine \url{https://www.medicines.org.uk/emc/medicine/2295}
+	\item Aripiprazole \url{https://www.accessdata.fda.gov/drugsatfda_docs/label/2014/021436s038,021713s030,021729s022,021866s023lbl.pdf}
+	\item Clozapine \url{https://www.medicines.org.uk/emc/medicine/32564}
+	\item Fluphenazine long acting injectible/depot \url{http://www.medicines.org.uk/emc/medicine/6956/SPC/Modecate+Injection+25mg+ml}
+\end{itemize}
+The minimum adequate dose thresholds used are given in Table \ref{dose-thresholds} and were determined as the mid-point between the minimum and maximum doses given in each medication's SPC as: minimum dose + (maximum dose - minimum dose)/2.  
+\begin{table}[]
+	\centering
+	\label{dose-thresholds}
+	\begin{tabular}{llll}
+		& \multicolumn{2}{l}{SPC Recommended Dose Range} &          		\\
+		Medication & Minimum (mg)     & Maximum (mg)  	  & Midpoint (mg) 	\\
+		\hline
+		Ziprasidone& 40 	          & 200 	          & 120    			\\
+		Olanzapine & 10 			  & 15				  & 12.5   			\\
+		Risperidone& 4 				  & 16				  & 10 				\\
+		Perphenazine&12				  & 24				  & 18				\\
+		Quetiapine&	 150			  & 750 			  & 450     		\\
+		Aripiprazole&10				  & 30				  & 20				\\
+		Clozapine& 	 200			  & 450				  & 325				\\
+		Fluphenazine&12.5			  & 100				  & 56.25			\\
+		\hline
+		
+	\end{tabular}
+	\caption{Dose Thresholds for Adequate Treatment Trials}
+	\label{SI:tab-meds-dose}
+\end{table}
+
+Only treatment episodes where the dose was greater than or equal to the midpoint were included as adequate treatment episodes.  
+
+\section{Secondary Analyses}
+\subsection{Burden of Individual TRS Criteria}
+For both the TRS group (having at least 2 adequate trials and meeting all criteria) and the difficult-to-treat group (meeting symptoms, SOF criteria (or both) but having had only 1 adequate trial) a logistic regression model was applied to estimate the effect of meeting TRS criteria with predictors: i) the number of other trials (beyond the adequate trials), ii) the duration (in months) of the adequate trial(s) and iii) sex.
+
+For the TRS group (145 patients, 86 or which converted to TRS), there was no effect of these three predictors on symptoms, SOF or both (i.e. full criteria for TRS) - Table \ref{tab-both-glm-TRS}.
+
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{rrrrrrrr}
+\hline
+& Estimate & Std. Error & z-value & P-value & OR & Lower CI & Upper CI \\ 
+\hline
+Symptoms Only\\
+\hline
+Rx Duration & -0.0520 & 0.0421 & -1.24 & 0.2166 & 0.95 & 0.87 & 1.03\\ 
+No. Other Rx& 0.0513  & 0.2737 & 0.19  & 0.8512 & 1.05 & 0.62 & 1.81\\ 
+Sex (male)  &-0.5369  & 0.4256 &-1.26  & 0.2071 & 0.58 & 0.24 & 1.32\\ 
+\hline
+SOF Only\\
+\hline
+Rx Duration & 0.0251 & 0.1069 & 0.23 & 0.8144 & 1.03 & 0.83 & 1.28\\ 
+No. Other Rx&-1.1532 & 0.6830 &-1.69 & 0.0913 & 0.32 & 0.08 & 1.25\\ 
+Sex (male)  & 0.9545 & 0.9622 & 0.99 & 0.3212 & 2.60 & 0.32 & 17.65\\
+\hline
+SOF and Symptoms\\
+\hline
+Rx Duration & -0.0568 & 0.0417 & -1.36 & 0.1736 & 0.94 & 0.87 & 1.02\\ 
+No. Other Rx& -0.0864 & 0.2707 & -0.32 & 0.7495 & 0.92 & 0.54 & 1.56\\ 
+Sex (male)  & -0.4690 & 0.4166 & -1.13 & 0.2603 & 0.63 & 0.27 & 1.39\\ 
+\hline
+\end{tabular}
+\end{center}
+\caption{Treatment Resistant (TRS) Group -- SOF, Symptoms (PANSS) and both SOF and Symptoms in patients with two adequate treatment trial}
+\label{tab-both-glm-TRS}
+\end{table}
+
+For the difficult-to-treat group (589 patients, with 156 meeting symptom criteria, 513 meeting SOF criteria and 146 meeting both SOF and symptom criteria), there was a significant effect of duration of adequate trial for symptoms (but not SOF) and a model with the outcome being \emph{both} symptoms and SOF (Table \ref{tab-both-glm-D2T}) with Bonferroni correction applied at the $0.05 / 3 = 0.016$ 
+
+\begin{table}[!h]
+\begin{center}
+\begin{tabular}{rrrrrrrr}
+\hline
+	& Estimate & Std. Error & z-value & P-value & OR & Lower CI & Upper CI \\ 
+\hline
+Symptoms Only \\
+\hline
+\textbf{Rx Duration}&-0.0681 & 0.0190& -3.59 & \textbf{0.0003} & \textbf{0.93} & \textbf{0.90} & \textbf{0.97}\\ 
+No. Other Rx &-0.0715 & 0.1161& -0.62 & 0.5378 & 0.93&0.74 & 1.17\\ 
+Sex (male) & 0.2557 & 0.2183 & 1.17 & 0.2416 & 1.29&0.85 & 2.00\\ 
+
+\hline
+SOF Only \\
+\hline
+Rx Duration  & -0.0192 & 0.0250 & -0.77 & 0.4424 & 0.98 & 0.93 & 1.03\\ 
+No. Other Rx & 0.0868  & 0.1643 & 0.53  & 0.5973 & 1.09 & 0.80 & 1.52\\ 
+Sex (male)   & 0.5204  & 0.2680 & 1.94  & 0.0522 & 1.68 & 0.98 & 2.83\\ 
+\hline
+SOF and Symptoms \\
+\hline
+\textbf{Rx Duration} & -0.0657 & 0.0194 & -3.39 & \textbf{0.0007} & \textbf{0.94} & \textbf{0.90} & \textbf{0.97}\\ 
+No. Other Rx & -0.0410 & 0.1181 & -0.35 & 0.7285 & 0.96 & 0.76 & 1.21\\ 
+Sex (male)   & 0.3799  & 0.2273 & 1.67  & 0.0947 & 1.46 & 0.94 & 2.31\\ 
+\hline
+\end{tabular}
+\end{center}
+\caption{Difficult-to-treat Group : SOF, Symptoms (PANSS) and both SOF and Symptoms in patients with one adequate treatment trial with Bonferroni correction for significant results at 0.05 / 3.}
+\label{tab-both-glm-D2T}
+\end{table}
+
+\subsection*{Predicting TRS Status from Baseline Characteristics}
+\begin{table}[!hbtp]
+\begin{center}
+	\begin{normalsize}
+		\begin{tabular}{rrrrrrrr}
+\hline
+	&Estimate&Std. Error&z value&P-value&OR&Lower CI & Upper CI\\ 
+\hline
+SOF\\
+\hline
+(A) Social &-0.0567&0.0949&-0.5979&0.5499&0.9448&0.7806&1.1336\\ 
+(B) Personal &0.1622&0.1180&1.3737&0.1695&1.1760&0.9314&1.4814\\ 
+(C) Accom &0.0542&0.1279&0.4243&0.6713&1.0557&0.8278&1.3696\\ 
+(C) Self-care&-0.0470&0.1359&-0.3456&0.7296&0.9541&0.7349&1.2540\\ 
+(C) Indepen &-0.0023&0.0941&-0.0244&0.9805&0.9977&0.8309&1.2032\\ 
+(D) Aggression &-0.2169&0.2389&-0.9079&0.3640&0.8050&0.4599&1.2028\\   
+\hline
+Cognitive Battery\\
+\hline
+\textbf{Verbal} &-0.5027&0.1701&-2.9562& \textbf{0.0031} & \textbf{0.6049} & \textbf{0.4319} & \textbf{0.8420} \\ 
+Vigilance &0.1643&0.1685&0.9753&0.3294&1.1786&0.8484&1.6441\\ 
+Speed &0.3928&0.1976&1.9878&0.0468&1.4811&1.0047&2.1831\\ 
+Reason &-0.1228&0.1683&-0.7297&0.4655&0.8844&0.6364&1.2327\\ 
+Memory &-0.1202&0.1812&-0.6635&0.5070&0.8867&0.6236&1.2717\\  
+\hline
+Symptoms (PANSS)\\
+\hline
+\textbf{Positive} &0.0690&0.0337&2.0466& \textbf{0.0407} & \textbf{1.0714} & \textbf{1.0032} & \textbf{1.1452} \\ 
+Negative &0.0494&0.0283&1.7456&0.0809&1.0506&0.9938&1.1105\\ 
+General &-0.0014&0.0203&-0.0674&0.9462&0.9986&0.9595&1.0392\\  
+\hline
+Demographics\\
+\hline
+\textbf{Age} &0.0492&0.0174&2.8199& \textbf{0.0048} & \textbf{1.0504} & \textbf{1.0151} & \textbf{1.0871}\\ 
+Sex &0.1172&0.3264&0.3590&0.7196&1.1243&0.6030&2.1809\\ 
+White &0.3783&0.9219&0.4104&0.6815&1.4598&0.2304&8.4625\\ 
+Black &0.2272&0.9373&0.2424&0.8085&1.2550&0.1893&7.3538\\ 
+Native &0.3311&1.1277&0.2936&0.7690&1.3926&0.0694&8.8562\\ 
+Asian &0.8038&1.0488&0.7664&0.4435&2.2339&0.2680&15.5052\\ 
+Pacific &0.2042&1.3906&0.1469&0.8832&1.2266&0.0415&13.2021\\ 
+Hispanic &-0.7623&0.5160&-1.4773&0.1396&0.4666&0.1505&1.1800\\ 
+\hline
+Illness\\
+\hline
+Exacerbation &-0.0558&0.4046&-0.1380&0.8903&0.9457&0.4200&2.0623\\ 
+CGI &-0.0995&0.1943&-0.5121&0.6086&0.9053&0.6168&1.3222\\ 
+1st Rx E+B &-0.0143&0.0217&-0.6569&0.5112&0.9858&0.9423&1.0266\\ 
+1st AP Rx &-0.0048&0.0236&-0.2020&0.8399&0.9952&0.9520&1.0451\\ 
+Lifetime Admissions &-0.1216&0.1079&-1.1261&0.2601&0.8855&0.7166&1.0954\\ 
+Admission past Yr &0.2143&0.1794&1.1942&0.2324&1.2390&0.8564&1.7383\\ 
+Hx ASB &0.0552&0.0893&0.6176&0.5368&1.0567&0.8819&1.2534\\ 
+TD &-0.7229&0.4185&-1.7271&0.0841&0.4854&0.1998&1.0499\\  
+\hline
+Baseline Rx\\
+\hline
+Olz &-0.5901&0.3649&-1.6172&0.1058&0.5543&0.2615&1.1051\\ 
+Que &0.0577&0.4241&0.1360&0.8918&1.0594&0.4321&2.3221\\ 
+Ris &-0.2759&0.3601&-0.7662&0.4436&0.7589&0.3629&1.5031\\ 
+\textbf{Zip} &0.9665&0.4830&2.0010& \textbf{0.0454} & \textbf{2.6287} & \textbf{0.9574} & \textbf{6.5106} \\ 
+Hal &0.0524&0.5732&0.0914&0.9272&1.0538&0.2941&2.9352\\ 
+Depot &-12.9699&703.5753&-0.0184&0.9853& NE & NE & NE \\ 
+Per &-0.3738&1.0885&-0.3434&0.7313&0.6881&0.0359&3.9319\\ 
+\textbf{Other} & 0.8778&0.3779&2.3227& \textbf{0.0202} & \textbf{2.4056} & \textbf{1.1093} & \textbf{4.9327}\\ 
+\hline
+			\end{tabular}
+		\end{normalsize}
+	\end{center}
+	\caption{Logistic Regression (1036 patients, of which 69 were TRS patients) for TRS status given baseline data.  Bold variables are statistically significant at $p<0.05$. Lower/Upper CI for 95\% confidence. NE indicates CI inestimable (due to low numbers).  SOF - social and occupational functioning scores computed as described in section \ref{SI:SOF} above.  Demographics - sex, ethnicity and racial heritage characteristics are 0/1 coded.  Illness: Exacerbation - crisis stabilisation / hospital treatment in past 3 months (0/1); CGI - clinical global impression (severity); 1st Rx E+B - years since first treatment for emotional/behavioural difficulties; 1st AP Rx - years since first treatment with antipsychotic medication; Lifetime Admissions - lifetime number of hospital admissions; Admissions past Yr - number of hospital admissions in past year; Hx ASB - history of childhood antisocial behaviour; TD - meets criteria for tardive dyskinesia.  Baseline Rx : 0/1 indicating baseline use of Olz (Olanzapine) Que (Quetiapine), Ris (Risperidone), Zip (Ziprasidone), Hal (Haloperidol), Depot (Fluphenazine long-acting injectible), Per (Perphenazine), Other (any other antipsychotic not included in preceding list i.e. not one of the CATIE study medications)}
+	\label{tab-all-assoc-GLM}
+\end{table}
+
+
+\newpage
+\bibliography{catie_trs_refs} 
+\bibliographystyle{apalike}
+
+\end{document}

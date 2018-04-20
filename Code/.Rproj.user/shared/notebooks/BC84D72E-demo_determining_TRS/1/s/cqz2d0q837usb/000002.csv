@@ -1,0 +1,5 @@
+"0","        # -- meets change criteria ? 1 => the < 20% change on total *and* one domain "
+"0","        status.sx <- ifelse( "
+"0","                                ( TRS.change.PANSS.criteria[3] == 1 ) &   # PANSS total change < 20%"
+"0","                                ( TRS.change.PANSS.criteria[1] == 1 | TRS.change.PANSS.criteria[2] == 1 ),   # either Pos or Neg domains are resistant"
+"0","                                1, 0 )"

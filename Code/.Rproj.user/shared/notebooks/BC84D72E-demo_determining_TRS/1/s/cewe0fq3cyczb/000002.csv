@@ -1,0 +1,3 @@
+"0","        # -- just incase, clear up duplicate panss rows"
+"0","        followupPANSS <- followupPANSS[ !duplicated( followupPANSS ), ]"
+"0","        baselinePANSS <- baselinePANSS[ !duplicated( baselinePANSS ), ]"

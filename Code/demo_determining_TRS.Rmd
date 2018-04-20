@@ -1,0 +1,513 @@
+---
+title: "Sample Walk-Through for Determining TRS Status"
+author: Dan W Joyce
+date: "19th April 2018"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    toc_float: true
+
+---
+
+# Introduction
+The script `tabulate_cases.R` -- for tabulating each participant and deciding on treatment resistance and responsive cases -- is long and confusing.  This notebook walks through an example case for a TRS participant, hopefully exposing the logic used by executing each chunk and illustrating the results.
+
+```{r message = FALSE}
+require(knitr)
+source("preprocess_trajectories.R")
+```
+
+# Walk-through for a TRS Case
+After executing `preprocess_trajectories.R`, we have three tables :
+  
+  * `TRS.rx.traj` containing the treatment history for all participants in CATIE
+  * `TRS.sofas.traj` containing the history of SOFAS/PSP proxy measures for all participants in CATIE
+  * `TRS.sx.traj` containing the symptoms (PANSS) history for all participants in CATIE
+  * `allIDs` is a vector containing the CATIE ID numbers for all participants in CATIE such that N = `r length( allIDs )`
+
+As an example to walk-through, participant ID = 1438 is detected as a TRS case and this corresponds to index 12 in `allIDs`
+
+We set `i = 12` to select participant 1438 :
+```{r}
+i <- 12
+```
+
+We reproduce the helper functions here so this walk-through will execute:
+```{r}
+# -- Some helper functions to make the following big loop easier to read ------------------
+  CreateNewRow <- function() {
+    return( 
+      data.frame( 
+        ID = thisID,
+        time.inTrial = keyvars$es_day[ which( keyvars$src_subject_id == thisID ) ],    # use end of study day as default
+        
+        onset.Sx  = NA,
+        onset.SOF = NA,
+        onset.Rx  = NA,
+        
+        time.onset.TRS = NA,
+        
+        time.TRS  = NA,
+        
+        numAdeq = NA,
+        durAdeq = NA,
+        totalRx = NA,
+        
+        status.rx = NA,
+        status.sx = NA,
+        status.sof = NA,
+        status.TRS = NA,
+        
+        TRS.pos = 0,       # resistance in pos domain
+        TRS.neg = 0,       # resistance in neg domain
+        
+        missing.Sx = 0,
+        missing.Rx = 0,
+        missing.SOF = 0
+      )
+    )
+  }
+
+# -- Function to check if a given participant is missing Rx, Sx and SOF data (to the extent we cannot)
+#    robustly process the participant further
+CheckZeroRecords <- function( thisRow, thisRx, thisSx, thisSOF ) {
+  # -- first, catch case where patient drops out with no real data
+  # -- NB : assumes missing.Rx, missing.Sx and missing.SOF are in global environment.
+  
+  # -- we do this by looking at Rx trajectory : 
+  if ( nrow( thisRx ) < 1 )  { ## no treatments recorded at all
+    thisRow$status.rx <- NA
+    thisRow$totalRx   <- NA
+    noFurtherFlag <- 1    ## tell rest of loop to not bother
+    missing.Rx <- c( missing.Rx, thisID )
+    thisRow$missing.Rx <- 1
+  }
+  
+  # -- second, catch situation where Sx is missing - so we cannot assess response to treatment
+  if ( nrow( thisSx ) < 1 ) {
+    thisRow$status.sx <- NA
+    noFurtherFlag <- 1    ## tell rest of loop to not bother
+    missing.Sx <- c( missing.Sx, thisID )
+    thisRow$missing.Sx <- 1
+  }
+  
+  # -- third, catch situation where SOF is missing - so we cannot assess social/occ functioning
+  if ( nrow( thisSOF ) < 2 ) {
+    thisRow$status.sof <- NA
+    missing.SOF <- c( missing.SOF, thisID )
+    thisRow$missing.SOF <- 1
+  }
+  
+  return( list( thisRow, noFurtherFlag ) )
+  
+}
+
+```
+
+# Main Loop
+
+## Retrieve Participant's Data
+The first part of the large loop determining TRS cases:
+```{r eval = FALSE}
+# -- Now track each participant ------------------------------------------------------------------------------------------
+  for ( i in 1:length( allIDs ) ) {
+```
+
+Is this:
+```{r}
+     
+    # -- for this participant ...
+    thisID <- allIDs[i]
+    
+    # -- fetch Sx, SOF and Rx (stored in TRS.sx.traj, TRS.sofas.traj, and TRS.rx.traj) 
+    # -- all output from "TRS_CATIE_v3.R"
+    thisSx  <- TRS.sx.traj[ which( TRS.sx.traj$ID == thisID ), ]
+    thisSOF <- TRS.sofas.traj[ which( TRS.sofas.traj$ID == thisID ), ]
+    thisRx  <- TRS.rx.traj[ which( TRS.rx.traj$ID == thisID ), ]
+  
+    noFurtherFlag <- 0
+  
+    # -- build a blank data.frame to store this participant
+    thisRow <- CreateNewRow()
+```
+
+Resulting in three dataframes for this participant.
+
+The PANSS / symptoms history:
+```{r}
+kable( thisSx )
+```
+
+The SOFAS history:
+```{r}
+kable( thisSOF)
+```
+
+And the treatments history
+```{r}
+kable( thisRx )
+```
+
+Finally, an unpopulated "blank row" for the final dataframe is created which looks like:
+```{r}
+kable( thisRow )
+```
+
+
+## Check for "Zero Data" Conditions
+
+The next chunk checks for participants where there is no usable data -- for example, if there is missing data for SOF, Sx, or Rx -- and `thisRow` is filled accordingly.  This is performed by the helper `CheckZeroRecords` which also returns a flag `= 1` telling the remainder of the loop not to do any further processing.  
+
+```{r}
+    # -- check for "zero" records for this participant
+    check.zero    <- CheckZeroRecords( thisRow, thisRx, thisSx, thisSOF )
+    noFurtherFlag <- check.zero[[2]]
+    thisRow       <- check.zero[[1]]
+```
+
+Which for this examplar case results in `noFurtherFlag` = `r noFurtherFlag` because there is data to use in assessing TRS status.
+
+## When Participant Does Have Data
+
+We check `noFurtherFlag == 0` indicating data is present and there's further work to be done on this participant ...
+
+```{r eval = FALSE}
+    # -- if we have treatment (Rx) data, then process Sx trajectory
+    if ( noFurtherFlag == 0 ) {
+```
+
+After checking for the (few) cases where visit days don't make sense, we then order `thisSOF`, `thisSX` and `thisRx` on `visday` column to make sure they are in ascending time order:
+
+```{r}
+
+      # -- there is at least one participant who's last.visit.day in thisRx is later than the thisSx.visday
+      #    and thisSOF.visday : capture this, and set last.visit.day equal to the last day of thisSx.visday
+      if ( thisRx$last.visit.day[ nrow(thisRx) ] > thisSx$visday[nrow(thisSx)] ) {
+        thisRx$last.visit.day[ nrow(thisRx) ] <- thisSx$visday[nrow(thisSx)]
+      }
+      
+      # -- order SOF by visday
+      thisSOF <- thisSOF[ order( thisSOF$visday ), ]
+      # -- remove duplicated SOF rows
+      thisSOF <- thisSOF[ !duplicated( thisSOF ), ]
+      
+      # -- Same for symptoms 
+      thisSx  <- thisSx[ order( thisSx$visday ), ]
+      thisSx  <- thisSx[ !duplicated( thisSx ), ]
+      # -- and treatments (for which there are never any duplicates)
+      thisRx  <- thisRx[ order( thisRx$last.visit.day ), ]
+```
+
+Next, we (left) join `thisSx`, `thisSOF` and `thisRx` on `visday`, subsetting only on the columns we need:
+
+```{r}
+      # -- join a subset of columns in thisSx and thisSOF with thisRx to compile TRS status 
+      temp <- left_join( thisSx, 
+                         thisSOF[ , names(thisSOF) %in% c("visday","TRS.sofas.traj") ],
+                         by = "visday" )  
+      
+      temp <- left_join( temp, thisRx[ names(thisRx) %in% c("rxDuration","adeqTrial","cumAdeqRx","cumRx","last.visit.day") ],
+                         by = c("visday" = "last.visit.day") )
+```
+
+Then, we set flags in `temp` for when symptoms (Sx) first "trigger" above the **absolute** threshold for positive and negative domains and another flag for when **both** social/occupational function (SOF) and Sx trigger -- these are the absolute criteria in the TRRIP concensus.
+
+```{r}
+     # --------------- time at which participant *first* triggers thresholds for SOF and Sx and Rx
+      temp$onsetSxFlag <- ifelse(   ( temp$TRS.pos == 1 |
+                                      temp$TRS.neg == 1 ), 1, 0
+      )
+      
+      # -- flag if the participant reached *BOTH* Sx and SOF criteria
+      temp$SOF.and.Sx.TRS <- ifelse( temp$onsetSxFlag== 1 & temp$TRS.sofas.traj == 1, 1, 0 )
+```
+
+Resulting in :
+
+```{r}
+kable( temp )
+```
+
+We now select the rows of `temp` which have cumulative numbers of adequate treatment:
+
+```{r}
+      # -- filter on cumAdeqRx
+      temp2 <- temp[ which( !is.na( temp$cumAdeqRx ) ), ]
+```
+
+Resulting in an auxillary dataframe `temp2` which is helpful later:
+```{r}
+kable( temp2 )
+```
+
+We next store the number of adequate treatment trials, the total duration of adequate treatments and the total number of treatments (adequate or otherwise) respectively:
+
+```{r}
+      # -- Store number of adequate trials, duration of adequate trials and total treatments
+      numAdeq <- max( thisRx$cumAdeqRx )
+      durAdeq <- sum( thisRx$rxDuration[ which( thisRx$adeqTrial == 1 ) ] )
+      totalRx <- max( thisRx$cumRx )
+```
+
+Using `temp2` we establish if absolute SOF and Sx are triggered together -- this was flagged earlier in `SOF.and.Sx.TRS`:
+
+```{r}
+
+      # flag if ever meets SOF and Sx criteria together
+      idxEver <- which( temp2$SOF.and.Sx.TRS == 1)
+      # -- idxEver : contains rows idxs for when Sx + SOF > threshold
+```
+
+We've extracted a vector of row indices, and then test if the length of this vector is non-zero to decide if there's data to work with. 
+
+The next chunk catches cases where the participant never had Sx and SOF absolute thresholds triggering together (and so, can never be TRS), and populates `thisRow` with relevant values for cases where the participant never reaches the absolute thresholds on Sx or SOF:
+
+```{r eval = FALSE}
+
+      # -- if NEVER has Sx and SOF criteria together then set variables to record non-TRS ...
+      if( length( idxEver ) == 0 ) {
+                
+                idxFirstSx  <- which( temp$onsetSxFlag == 1 )
+                idxFirstSOF <- which( temp$TRS.sofas.traj == 1 )
+                idxFirstRx  <- which( thisRx$adeqTrial == 1 )
+                if( length( idxFirstSx ) == 0 ) {
+                  onset.Sx <- NA
+                } else {
+                  onset.Sx  <- temp$visday[ min( idxFirstSx ) ]
+                }
+                
+                if( length( idxFirstSOF ) == 0 ) {
+                  onset.SOF <- NA
+                } else {
+                  onset.SOF <- temp$visday[ min( idxFirstSOF ) ]
+                }
+        
+                # -- as never reaches criteria for Rx >= 2        
+                onset.Rx <- NA
+                
+                time.onset.TRS <- NA
+                time.TRS       <- NA
+                
+                status.rx  <- NA
+                status.sx  <- NA
+                status.sof <- NA
+                status.TRS <- 1    # censored - never met TRS criteria
+                
+                TRS.pos = 0        # obviously, cannot meet resistance in pos domain
+                TRS.neg = 0        # or in neg domain
+      }
+```
+
+For participant `r thisID`, `length( idxEver )` is `r length( idxEver)` and we skip the above code and move to:
+
+```{r eval = FALSE}
+      # -- if this participant DOES meet Sx and SOF criteria together ... establish TRS status
+      if ( length( idxEver ) > 0 ) {
+        # -- now, ascertain the BASELINE for PANSS change, then when adeqRx >= 2 and
+```
+
+Where the main bulk of the work is done for cases where the participant **did** meet absolute SOF and Sx criteria at some point in the trial.
+
+## Computing TRS-related Variables
+
+First we need the time (the `visday`) at which the participant met the absolute Sx and SOF criteria, and also the `visday` at which they meet the >= 2 adequate treatments (Rx):
+```{r}
+        # -- compute time at which Sx and SOF were "at risk" -- i.e. above threshold, but NOT YET had adequate treatment
+        onset.Sx  <- temp$visday[ min( which( temp$onsetSxFlag == 1 ) ) ]
+        onset.SOF <- temp$visday[ min( which( temp$TRS.sofas.traj == 1 ) ) ]
+        
+        # -- and then time at which adequate trials passes threshold >= 2
+        onset.rx.idx <- which( temp$cumAdeqRx >= 2 )
+        if ( length( onset.rx.idx ) == 0 ) { 
+          # -- in this case, participant NEVER had >= 2 adequate trials
+          onset.Rx  <- NA
+        } else {
+          # -- otherwise, store time and which they completed >= 2 adequate trials
+          onset.Rx  <- temp$visday[ min( onset.rx.idx ) ]        
+        }
+        
+        # -- compute time at which Sx and SOF were at risk together (but not necessarily the Adequate Rx criteria met)
+        time.onset.TRS <- temp$visday[ min( which( temp$SOF.and.Sx.TRS == 1 ) ) ]
+        
+```
+
+So, for participant `r thisID`, we establish that they:
+
+  * met absolute SOF criteria at `visday` = `r onset.Sx` (`onset.Sx`)
+  * met absolute Sx criteria at `visday` = `r onset.SOF` (`onset.SOF`)
+  * met **both** Sx and SOF simultaneously on `visday` = `r time.onset.TRS` (`time.onset.TRS`)
+  * and the `visday` at which they had completed 2 adequate treatment trials was `r onset.Rx` (`onset.Rx`)
+
+We now need to track the **change** in symptoms, as per the TRRIP concensus criteria.
+
+We extract the baseline PANSS at the timepoint they met both the absolute Sx and SOF criteria (`time.onset.TRS`)
+
+```{r}
+        # -- extract the PANSS scores at time.onset.TRS : this will be the baseline for symptom change measurement
+        baselinePANSS <- temp[ which( temp$visday == time.onset.TRS ), c("visday", "adjPos", "adjNeg", "adjGen", "adjTot") ]
+        
+        # -- extract the PANSS scores for followup 
+        # -- this will be after 0, 1 or 2 adequate trials and will be the follow-up time for symptom change measurement
+```
+
+Resulting in:
+```{r}
+kable( baselinePANSS )
+```
+
+Notice, we use the **adjusted** PANSS scores (making the lowest value 0) so that the Leucht (2009) formula applies (as TRRIP recommends this adjustment for the percentage change criteria).
+
+Next we check : did the participant have **at least** 2 adequate trials?  We can do this by inspecting `onset.Rx` which if NA, means they did not.
+Participant `r thisID` clearly does, as `onset.Rx` = `r onset.Rx`.  
+
+```{r}
+        # -- never had 2 adequate trials, so we cannot record they were TRS
+        if ( is.na( onset.Rx ) ) {
+          # -- but we still require some measurement of symptom change
+          # -- if they did not have 2 adequate trials, but numAdeq > 0 ==> after one adequate trial, we record PANSS for response
+          if ( numAdeq > 0 ) {
+            followupPANSS <- temp[ min( which( temp$cumAdeqRx == 1 ) ), c("visday", "adjPos", "adjNeg", "adjGen", "adjTot") ]
+          } else 
+            # -- NEVER had even one adequate trial, so use end of trial
+            # -- find last day with PANSS scores
+            {
+              tempPANSS <- temp[
+                                  complete.cases( temp[ , c("visday", "adjPos", "adjNeg", "adjGen", "adjTot") ] ),
+                                  c("visday", "adjPos", "adjNeg", "adjGen", "adjTot")
+                                ]
+              followupPANSS <- tempPANSS[ nrow( tempPANSS ), ]
+            }
+        } else
+          # -- Had TWO full adequate trials, and therefore
+          # -- use onset.Rx day as the follow up AFTER 2 adequate trials
+          { 
+            followupPANSS <- temp[ which( temp$visday == onset.Rx ), c("visday", "adjPos", "adjNeg", "adjGen", "adjTot") ]
+          }
+```
+
+Which gives us the PANSS score for the time at which the participant completes 2 adequate trials `visday` = `r onset.Rx`:
+
+```{r}
+kable( followupPANSS )
+```
+
+We do some duplication checking to ensure both `followupPANSS` and `baselinePANSS` are single rows:
+
+```{r}
+        # -- just incase, clear up duplicate panss rows
+        followupPANSS <- followupPANSS[ !duplicated( followupPANSS ), ]
+        baselinePANSS <- baselinePANSS[ !duplicated( baselinePANSS ), ]
+```
+
+Before computing the percentage change in PANSS after 2 adequate trials (by the Leucht 2009 formula):
+```{r}
+        # -- percentage change in symptoms : Leucht et al, 2009
+        deltaPANSS <- 100 * ( baselinePANSS[ c("adjPos", "adjNeg", "adjTot") ] - followupPANSS[ c("adjPos", "adjNeg", "adjTot") ] ) /
+                                followupPANSS[ c("adjPos", "adjNeg", "adjTot") ]
+```
+
+Resulting in a percentage change vector:
+
+```{r}
+kable( deltaPANSS )
+```
+
+The next step is to assess if the total PANSS, positive and negative domains, have changed by >= 20%:
+```{r}
+        # -- Now, if deltaPANSS >= 20% ==> improvement threshold, therefore NOT TRS on that PANSS domain
+        TRS.change.PANSS.criteria <- ifelse( deltaPANSS >= 20, 0, 1 )
+```
+
+Yielding a vector:
+```{r}
+kable( TRS.change.PANSS.criteria )
+```
+
+Where a `1` indicates the change in symptoms (after 2 adequate treatment trials) was **not greater than** 20%, so they **do** meet TRS on symptom change criteria, and `0` means the change was greater than 20% (and consequently they **do not** meet TRS criteria of symptom change).
+
+Next, record the time at which SOF, Sx and adequate Rx were reached:
+
+```{r}
+        # -- Record time at which SOF, absolute Sx and cumAdeqRx >= 2
+        idxTimeTRS     <- which( temp2$SOF.and.Sx.TRS == 1 & temp2$cumAdeqRx >= 2 )
+        if ( length( idxTimeTRS ) == 0 ) 
+          # -- never became TRS
+          { 
+            time.TRS       <- NA
+          } else 
+          # -- became TRS
+          {
+            time.TRS       <- temp2$visday[ min( idxTimeTRS  ) ]
+          }
+```
+
+Set status flag indicating this participant met the >= 2 **adequate trials** criteria
+```{r}
+        # -- record IF EVER met Rx >= 2 criteria
+        status.rx  <- ifelse( !is.na( onset.Rx ) & onset.Rx  > 0, 1, 0 )
+```
+
+Set status flag recording whether this participant meets the full TRS criteria on **symptom change** which is:
+
+  * Positive **or** negative domain scores have not responded by >= 20%
+  * And overall PANSS (total) score has not responded by >= 20%
+
+```{r}
+        # -- meets change criteria ? 1 => the < 20% change on total *and* one domain 
+        status.sx <- ifelse( 
+                                ( TRS.change.PANSS.criteria[3] == 1 ) &   # PANSS total change < 20%
+                                ( TRS.change.PANSS.criteria[1] == 1 | TRS.change.PANSS.criteria[2] == 1 ),   # either Pos or Neg domains are resistant
+                                1, 0 )
+```
+
+Finally, check **all** TRRIP criteria have been met (Sx, SOF and Rx), coding `status.TRS` = 2 for full TRS, and 1 otherwise:
+
+```{r}
+        # -- absolute criteria threshold STILL met at followup time ONLY if time.TRS is *not* NA
+        # -- So, check that time.TRS is not NA (==> simultaneously met absolute Sx and Rx conditions)
+        # -- AND that the change in symptoms was actually < 20% -- status.sx.delta
+        if( !is.na( time.TRS ) & status.sx == 1 ) {
+          # -- the SOF + absolute Sx + Rx criteria were ALL met 
+          status.TRS <- 2
+        } else {
+          # -- participant is treatment response / censored
+          status.TRS <- 1
+        }
+          
+        status.sof <- ifelse( !is.na( onset.SOF ) & onset.SOF > 0, 1, 0 )
+        TRS.pos = TRS.change.PANSS.criteria[1]       # resistance in pos domain 1,0
+        TRS.neg = TRS.change.PANSS.criteria[2]       # resistance in neg domain 1,0
+        
+```
+
+Some book-keeping:
+
+```{r}
+      # -- complete thisRow and store
+      thisRow$onset.Sx    <- onset.Sx
+      thisRow$onset.SOF   <- onset.SOF
+      thisRow$onset.Rx    <- onset.Rx
+      
+      thisRow$time.onset.TRS <- time.onset.TRS
+      thisRow$time.TRS       <- time.TRS
+      thisRow$status.TRS     <- status.TRS
+      
+      thisRow$numAdeq     <- numAdeq
+      thisRow$durAdeq     <- durAdeq
+      
+      thisRow$totalRx     <- totalRx
+      thisRow$status.rx   <- status.rx
+      thisRow$status.sx   <- status.sx
+      thisRow$status.sof  <- status.sof
+      thisRow$TRS.pos     <- TRS.pos
+      thisRow$TRS.neg     <- TRS.neg
+```
+ 
+With the final population `thisRow` vector being:
+   
+```{r}
+kable( thisRow )
+```
+ 
+ `thisRow` is then appended to `tab.Surv` for later use.
