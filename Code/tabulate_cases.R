@@ -513,11 +513,6 @@ missingTab$missingFU.any     <- ifelse(
                                             missingTab$missingFU.sx == 1 |
                                             missingTab$missingFU.sof == 1 ), 1, 0 )
 
-# -- store missingTab (for missing data analyses)
-# -- tab.Surv (for survival analyses, and more)
-# -- allIDs (just a vector off all participant IDs)
-save( missingTab, tab.Surv, allIDs, file = paste0( data.path, "survival_tabulated_data_v3.RData") )
-
 # -- save in non-proprietary format
 write.csv( missingTab, file = paste0( data.path, "missingData_tabulated_v3.csv"), row.names = FALSE )
 write.csv( tab.Surv,   file = paste0( data.path, "survivalData_tabulated_v3.csv"), row.names = FALSE )
